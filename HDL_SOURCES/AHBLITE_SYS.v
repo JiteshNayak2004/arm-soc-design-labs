@@ -43,6 +43,25 @@ module AHBLITE_SYS(
     //TO BOARD LEDs
     //output      wire    [7:0]   LED,
 
+	//VGA IO
+	//output	wire 	[2:0]		vgaRed,
+	//output 	wire	[2:0]		vgaGreen,
+	//output 	wire	[1:0]		vgaBlue,
+	//output 	wire				Hsync,     	//VGA Horizontal Sync
+	//output 	wire				Vsync,    	//VGA Vertical Sync
+
+    //TO UART
+	//input 	wire				RsRx,
+	//output 	wire				RsTx,
+
+	// Switch Inputs
+    //input 	wire	[7:0]		SW,
+	
+	// 7 Segment display
+	//output 	wire	[6:0]		seg,
+	//output 	wire				dp,
+	//output 	wire	[3:0]		an,
+
     // Debug
     input       wire            TCK_SWCLK,               // SWD Clk / JTAG TCK
     input       wire            TDI_NC,                  // NC      / JTAG TDI
@@ -71,19 +90,28 @@ wire 			HREADY;
 //SELECT SIGNALS
 wire [3:0] 		MUX_SEL;
 
-wire 			HSEL_MEM;
-//wire 			HSEL_LED;
-wire            HSEL_SIGNLERAM;
-
+wire 				HSEL_MEM;
+//wire 				HSEL_VGA;
+//wire 				HSEL_UART;
+//wire 				HSEL_GPIO;
+wire 				HSEL_TIMER;
+//wire 				HSEL_7SEG;
 
 //SLAVE READ DATA
 wire [31:0] 	HRDATA_MEM;
-//wire [31:0] 	HRDATA_LED;
-wire [31:0] 	HRDATA_SINGLERAM;//SINGLE PORT MEMORY
+//wire [31:0] 	HRDATA_VGA;
+//wire [31:0] 	HRDATA_UART;
+//wire [31:0] 	HRDATA_GPIO;
+wire [31:0] 	HRDATA_TIMER;
+//wire [31:0] 	HRDATA_7SEG;
+
 //SLAVE HREADYOUT
-wire 			HREADYOUT_MEM;
-//wire 			HREADYOUT_LED;
-wire 			HREADYOUT_SIGNLERAM;
+wire 				HREADYOUT_MEM;
+//wire 				HREADYOUT_VGA;
+//wire 				HREADYOUT_UART;
+//wire 				HREADYOUT_GPIO;
+wire 				HREADYOUT_TIMER;
+//wire 				HREADYOUT_7SEG;
 
 //CM0-DS Sideband signals
 wire [31:0]		IRQ;
@@ -97,7 +125,10 @@ wire            sys_reset_req;
 assign 			HRESP = 1'b0;
 
 // Interrupt signals
-assign          IRQ = 32'h00000000;
+
+wire            TIMER_IRQ;
+assign          IRQ = 32'b00000000;
+
 
 // Clock
 wire            fclk;                 // Free running clock
@@ -105,7 +136,7 @@ wire            fclk;                 // Free running clock
 wire            reset_n = RESET;
 
 // Clock divider, divide the frequency by two, hence less time constraint 
-reg clk_div = 1'b0;//If vivado only this initialization is required.For synthesis initialization of 1'b0 is not needed.
+reg clk_div=1'b1;
 always @(posedge CLK)
 begin
     clk_div=~clk_div;
@@ -226,10 +257,10 @@ AHBDCD uAHBDCD (
 	.HSEL_S0(HSEL_MEM),
 	.HSEL_S1(),
     .HSEL_S2(),
-    .HSEL_S3(),
+    .HSEL_S3(HSEL_TIMER),
     .HSEL_S4(),
     .HSEL_S5(),
-    .HSEL_S6(HSEL_SINGLERAM),
+    .HSEL_S6(),
     .HSEL_S7(),
     .HSEL_S8(),
     .HSEL_S9(),
@@ -248,10 +279,10 @@ AHBMUX uAHBMUX (
 	.HRDATA_S0(HRDATA_MEM),
 	.HRDATA_S1(32'h00000000),
 	.HRDATA_S2(32'h00000000),
-	.HRDATA_S3(32'h00000000),
+	.HRDATA_S3(HRDATA_TIMER),
 	.HRDATA_S4(32'h00000000),
 	.HRDATA_S5(32'h00000000),
-	.HRDATA_S6(HRDATA_SINGLERAM),
+	.HRDATA_S6(32'h00000000),
 	.HRDATA_S7(32'h00000000),
 	.HRDATA_S8(32'h00000000),
 	.HRDATA_S9(32'h00000000),
@@ -260,10 +291,10 @@ AHBMUX uAHBMUX (
 	.HREADYOUT_S0(HREADYOUT_MEM),
 	.HREADYOUT_S1(1'b1),
 	.HREADYOUT_S2(1'b1),
-	.HREADYOUT_S3(1'b1),
+	.HREADYOUT_S3(HREADYOUT_TIMER),
 	.HREADYOUT_S4(1'b1),
 	.HREADYOUT_S5(1'b1),
-	.HREADYOUT_S6(HREADYOUT_SINGLERAM),
+	.HREADYOUT_S6(1'b1),
 	.HREADYOUT_S7(1'b1),
 	.HREADYOUT_S8(1'b1),
 	.HREADYOUT_S9(1'b1),
@@ -292,49 +323,60 @@ AHB2MEM uAHB2MEM (
 	.HRDATA(HRDATA_MEM), 
 	.HREADYOUT(HREADYOUT_MEM)
 );
-
-
-//AHB-Lite Slave
-//Single port RAM
-AHBSINGLERAM uAHBSINGLERAM (
-    //AHBLITE Signals
-    .CS(HSEL_SINGLERAM),
-    .CLK(HCLK),
-    .HRESETn(HRESETn),
-    .HREADY(HREADY),
-    .ADDRESS(HADDR),
-    .HTRANS(HTRANS),
-    .WE(HWRITE),
-    .HSIZE(HSIZE),
-    .DATA_IN(HWDATA),
-    
-    .DATA_OUT(HRDATA_SINGLERAM),
-    .HREADYOUT(HREADYOUT_SINGLERAM)
-
-);
 /*
-//AHBLite Slave 
-AHB2LED uAHB2LED (
-    //AHBLITE Signals
-    .HSEL(HSEL_LED),
-    .HCLK(HCLK),
-    .HRESETn(HRESETn),
-    .HREADY(HREADY),
-    .HADDR(HADDR),
-    .HTRANS(HTRANS),
-    .HWRITE(HWRITE),
-    .HSIZE(HSIZE),
-    .HWDATA(HWDATA),
+// AHBLite VGA Peripheral
+AHBVGA uAHBVGA (
+    .HCLK(HCLK), 
+    .HRESETn(HRESETn), 
+    .HADDR(HADDR), 
+    .HWDATA(HWDATA), 
+    .HREADY(HREADY), 
+    .HWRITE(HWRITE), 
+    .HTRANS(HTRANS), 
+    .HSEL(HSEL_VGA), 
+    .HRDATA(HRDATA_VGA), 
+    .HREADYOUT(HREADYOUT_VGA), 
+    .hsync(Hsync), 
+    .vsync(Vsync), 
+    .rgb({vgaRed,vgaGreen,vgaBlue})
+    );
+
+AHBUART uAHBUART(
+	.HCLK(HCLK),
+	.HRESETn(HRESETn),
+	.HADDR(HADDR),
+	.HWDATA(HWDATA),
+	.HREADY(HREADY),
+	.HWRITE(HWRITE),
+	.HTRANS(HTRANS),
+	.HSEL(HSEL_UART),
+	.HRDATA(HRDATA_UART),
+	.HREADYOUT(HREADYOUT_UART),
+	
+	.RsRx(RsRx),
+	.RsTx(RsTx)
+//	.uart_irq(UART_IRQ)
+    );
     
-    .HRDATA(HRDATA_LED),
-    .HREADYOUT(HREADYOUT_LED),
-
-    .LED(LED[7:0])
-);
-
-*/
-
-
+// AHBLite 7-segment Pheripheral	 
+AHB7SEGDEC uAHB7SEGDEC(
+	.HCLK(HCLK),
+	.HRESETn(HRESETn),
+	.HADDR(HADDR),
+	.HWDATA(HWDATA),
+	.HREADY(HREADY),
+	.HWRITE(HWRITE),
+	.HTRANS(HTRANS),
+    
+	.HSEL(HSEL_7SEG),
+	.HRDATA(HRDATA_7SEG),
+	.HREADYOUT(HREADYOUT_7SEG),
+	 
+	.seg(seg),
+	.an(an),
+	.dp(dp)
+	);	
+	*/	
 // AHBLite timer
 AHBTIMER uAHBTIMER(
 	.HCLK(HCLK),
@@ -351,5 +393,23 @@ AHBTIMER uAHBTIMER(
     
 	//.timer_irq(TIMER_IRQ) this statement is commented in timer only
 	);
-	
+/*
+// AHBLite GPIO	
+AHBGPIO uAHBGPIO(
+	.HCLK(HCLK),
+	.HRESETn(HRESETn),
+	.HADDR(HADDR),
+	.HWDATA(HWDATA),
+	.HREADY(HREADY),
+	.HWRITE(HWRITE),
+	.HTRANS(HTRANS),
+
+	.HSEL(HSEL_GPIO),
+	.HRDATA(HRDATA_GPIO),
+	.HREADYOUT(HREADYOUT_GPIO),
+    
+	.GPIOIN({8'b00000000,SW[7:0]}),
+	.GPIOOUT(LED[7:0])
+	);
+*/	
 endmodule
