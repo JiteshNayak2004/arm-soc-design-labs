@@ -333,4 +333,23 @@ AHB2LED uAHB2LED (
 );
 
 */
+
+
+// AHBLite timer
+AHBTIMER uAHBTIMER(
+	.HCLK(HCLK),
+	.HRESETn(HRESETn),
+	.HADDR(HADDR),
+	.HWDATA(HWDATA),
+	.HREADY(HREADY),
+	.HWRITE(HWRITE),
+	.HTRANS(HTRANS),
+    
+	.HSEL(HSEL_TIMER),
+	.HRDATA(HRDATA_TIMER[31:0]),
+	.HREADYOUT(HREADYOUT_TIMER)
+    
+	//.timer_irq(TIMER_IRQ) this statement is commented in timer only
+	);
+	
 endmodule
