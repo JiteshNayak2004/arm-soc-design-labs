@@ -393,23 +393,23 @@ AHBTIMER uAHBTIMER(
     
 	//.timer_irq(TIMER_IRQ) this statement is commented in timer only
 	);
-/*
-// AHBLite GPIO	
-AHBGPIO uAHBGPIO(
-	.HCLK(HCLK),
-	.HRESETn(HRESETn),
-	.HADDR(HADDR),
-	.HWDATA(HWDATA),
-	.HREADY(HREADY),
-	.HWRITE(HWRITE),
-	.HTRANS(HTRANS),
-
-	.HSEL(HSEL_GPIO),
-	.HRDATA(HRDATA_GPIO),
-	.HREADYOUT(HREADYOUT_GPIO),
+	
+// LED MODULE
+AHB2LED uAHB2LED (
+    //AHBLITE Signals
+    .HSEL(HSEL_LED),
+    .HCLK(HCLK),
+    .HRESETn(HRESETn),
+    .HREADY(HREADY),
+    .HADDR(HADDR),
+    .HTRANS(HTRANS),
+    .HWRITE(HWRITE),
+    .HSIZE(HSIZE),
+    .HWDATA(HWDATA),
     
-	.GPIOIN({8'b00000000,SW[7:0]}),
-	.GPIOOUT(LED[7:0])
-	);
-*/	
+    .HRDATA(HRDATA_LED),
+    .HREADYOUT(HREADYOUT_LED),
+
+    .LED(LED[7:0])
+);
 endmodule
